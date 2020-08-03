@@ -6,6 +6,7 @@ import math
 import sys
 import json
 import subprocess
+from scipy import stats
 
 metrics = [
     "lh:computed:first-contentful-paint",
@@ -144,6 +145,40 @@ def compareBatchVariances(df: pd.DataFrame, batch_a: str, batch_b: str):
             prRed(f'{colname}  Variance for {batch_a} ({a_val}) was {percentageDiff} % greater than {batch_b} ({b_val})')
     print("\n")
 
+def quantifyPerformanceChangeKalibera(df, batch_a: str, batch_b: str, metric: str):
+    print("Quantifying change in ", metric)
+    means = df.groupby('batch').mean()[metric]
+    var = df.groupby('batch').var()[metric]
+    tval = stats.t.ppf(0.25, 2)
+    tval = tval * tval
+    prod_of_means = means[batch_a] * means[batch_b]
+
+    y1 = means[batch_a]
+    y2 = means[batch_b]
+    y1_squared = y1 * y1
+    y2_squared = y2 * y2
+
+    variance_1 = var[batch_a]
+    variance_2 = var[batch_b]
+    h1 = tval * (variance_1 / 2)
+    h2 = tval * (variance_2 / 2)
+
+    rhs = ((y1*y2) * (y1*y2)) - ((y1_squared - h1) * (y2_squared - h2))
+    print(rhs)
+    if rhs > 0:
+        rhs_sqrt = math.sqrt(rhs)
+    else:
+        print("Rhs must not be less than 0", rhs)
+        raise ValueError
+    neg_numerator = prod_of_means - rhs_sqrt
+    pos_numerator = prod_of_means + rhs_sqrt
+    ci_denominator = y1_squared - h1
+    bounds = (neg_numerator/ ci_denominator, pos_numerator / ci_denominator)
+    print(F"The ratio of {batch_a} to {batch_b} regarding {metric} is {y1 / y2} and its bounds are {bounds}")
+    print(F"The mean of {batch_a} is {means[batch_a]}. The mean for {batch_b} is {means[batch_b]}")
+    print(F"The variance of {batch_a} is {var[batch_a]}. The mean for {batch_b} is {var[batch_b]}")
+
+
 
 info = "python3 -i stats.py <url> \n run b[batch number] \n comp b[batch number 1] b[batch number 2]"
 
@@ -174,6 +209,8 @@ def main():
             batch_b = sys.argv[4]
             compareBatchMeans(df, batch_a, batch_b)
             compareBatchVariances(df, batch_a, batch_b)
+            for metric in df.columns:
+                quantifyPerformanceChangeKalibera(df, batch_a, batch_b, metric)
     except OSError as e:
         print(e)
     finally:
