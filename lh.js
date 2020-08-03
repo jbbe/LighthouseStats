@@ -11,17 +11,13 @@ const fs = require("fs");
 const glob = require("glob");
 const path = require("path");
 
+let silent = false;
+
 const launchChromeAndRunLighthouse = url => {
   return chromeLauncher.launch({chromeFlags: [ "disable-web-security", "--ignore-certificate-errors"]}).then(chrome => {
     const opts = {
       port: chrome.port,
-      "args": ["--headless", "disable-web-security",
-            "--ignore-certificate-errors"]
-    //   args: [
-    //       "disable-web-security",
-    //       "ignore-certificate-errors"
-    //     ]
-      
+      "args": ["--headless", "disable-web-security", "--ignore-certificate-errors"]
     };
     return lighthouse(url, opts).then(results => {
       return chrome.kill().then(() => {
@@ -89,6 +85,9 @@ if (argv.from && argv.to) {
     getContents(argv.to + ".json")
   );
 } else if (argv.url) {
+  if(argv.silent) {
+    silent = true;
+  }
   const urlObj = new URL(argv.url);
   let dirName = urlObj.host.replace("www.", "");
   if (urlObj.pathname !== "/") {
@@ -104,7 +103,7 @@ if (argv.from && argv.to) {
       sync: true
     });
 
-    if (prevReports.length) {
+    if (prevReports.length && !silent) {
       dates = [];
       for (report in prevReports) {
         dates.push(
@@ -122,14 +121,17 @@ if (argv.from && argv.to) {
 
       compareReports(recentReportContents, results.js);
     }
-
+    const fileName = `${dirName}/${results.js["fetchTime"].replace(/:/g, "_")}.json`
     fs.writeFile(
-      `${dirName}/${results.js["fetchTime"].replace(/:/g, "_")}.json`,
+      fileName,
       results.json,
       err => {
         if (err) throw err;
       }
     );
+    if (silent) {
+      console.log(fileName);
+    }
   });
 } else {
   throw "You haven't passed a URL to Lighthouse";

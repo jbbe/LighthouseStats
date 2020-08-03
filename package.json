@@ -1,0 +1,18 @@
+{
+  "name": "testing-variation-tool",
+  "version": "1.0.0",
+  "description": "A tool to iterably define a desired number of trials for web testing tools.",
+  "main": "lh.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node lh.js --url https://localhost:7777"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chrome-launcher": "^0.13.4",
+    "glob": "^7.1.6",
+    "lighthouse": "^6.1.1",
+    "yargs": "^15.4.1"
+  }
+}
