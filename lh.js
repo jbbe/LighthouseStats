@@ -121,7 +121,12 @@ if (argv.from && argv.to) {
 
       compareReports(recentReportContents, results.js);
     }
-    const fileName = `${dirName}/${results.js["fetchTime"].replace(/:/g, "_")}.json`
+    let fileName;
+    if(argv.batchName) {
+      fileName = `${dirName}/${argv.batchName}_${results.js["fetchTime"].replace(/:/g, "_")}.json`
+    } else {
+      fileName = `${dirName}/${results.js["fetchTime"].replace(/:/g, "_")}.json`
+    }
     fs.writeFile(
       fileName,
       results.json,
