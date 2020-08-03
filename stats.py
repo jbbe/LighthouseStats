@@ -210,7 +210,12 @@ def main():
             compareBatchMeans(df, batch_a, batch_b)
             compareBatchVariances(df, batch_a, batch_b)
             for metric in df.columns:
-                quantifyPerformanceChangeKalibera(df, batch_a, batch_b, metric)
+                if(metric == 'batch'):
+                    continue
+                try:
+                    quantifyPerformanceChangeKalibera(df, batch_a, batch_b, metric)
+                except Exception as e:
+                    prRed("Error quantifying performance for ", metric)
     except OSError as e:
         print(e)
     finally:
