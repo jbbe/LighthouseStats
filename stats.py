@@ -109,23 +109,41 @@ def runBatch(batchName: str, url: str, file_root: str):
     else:
         with open(batch_file_path, 'w', encoding='utf-8') as f:
             json.dump({"batches" : [batchName]}, f, indent=4)
-    runNTrials(4, batchName, url)
+    runNTrials(7, batchName, url)
 
 def calcPercentageDiff(a, b):
     per = ((b - a) / a) * 100
     return math.floor(per * 100) / 100
 
-def compareBatches(df: pd.DataFrame, batch_a: str, batch_b: str):
+def compareBatchMeans(df: pd.DataFrame, batch_a: str, batch_b: str):
     means = df.groupby('batch').mean()
     for col in means.columns:
+        colname = col.split(':')[-1]
         percentageDiff = calcPercentageDiff(means[col][batch_a], means[col][batch_b])
         if percentageDiff < 0:
-            prRed(f'{batch_a} was ${percentageDiff * -1} % slower than {batch_b}')
+            prRed(f'{colname}   {batch_a} was {percentageDiff * -1} % slower than {batch_b}')
         elif percentageDiff == 0:
-            prCyan("unchanged")
+            prCyan(f"{colname}   unchanged")
         else:
-            prGreen(f'{batch_a} was ${percentageDiff} % faster than {batch_b}')
-    return means
+            prGreen(f'{colname}   {batch_a} was {percentageDiff} % faster than {batch_b}')
+    print("\n")
+
+
+def compareBatchVariances(df: pd.DataFrame, batch_a: str, batch_b: str):
+    var = df.groupby('batch').var()
+    for col in var.columns:
+        colname = col.split(':')[-1]
+        percentageDiff = calcPercentageDiff(var[col][batch_a], var[col][batch_b])
+        a_val = math.floor(var[col][batch_a])
+        b_val = math.floor(var[col][batch_b])
+        if percentageDiff < 0:
+            prGreen(f'{colname}  Variance for {batch_a} was {percentageDiff * -1} % less than {batch_b} ({b_val})')
+        elif percentageDiff == 0:
+            prCyan(f"{colname}  Variance is equal ({a_val})")
+        else:
+            prRed(f'{colname}  Variance for {batch_a} ({a_val}) was {percentageDiff} % greater than {batch_b} ({b_val})')
+    print("\n")
+
 
 info = "python3 -i stats.py <url> \n run b[batch number] \n comp b[batch number 1] b[batch number 2]"
 
@@ -154,7 +172,8 @@ def main():
                 exit(1)
             batch_a = sys.argv[3]
             batch_b = sys.argv[4]
-            compareBatches(df, batch_a, batch_b)
+            compareBatchMeans(df, batch_a, batch_b)
+            compareBatchVariances(df, batch_a, batch_b)
     except OSError as e:
         print(e)
     finally:
