@@ -3,3 +3,4 @@ env/
 .vscode
 *__index.html
 localhost*
+.DS_Store

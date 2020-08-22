@@ -13,6 +13,8 @@
     "chrome-launcher": "^0.13.4",
     "glob": "^7.1.6",
     "lighthouse": "^6.1.1",
+    "dot-prop": ">=4.2.1",
+    "jpeg-js": ">=0.4.0",
     "yargs": "^15.4.1"
   }
 }

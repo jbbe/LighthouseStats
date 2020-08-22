@@ -97,16 +97,22 @@ def getBatchVars(df: pd.DataFrame):
     return var_df
 
 def runBatch(batchName: str, url: str, file_root: str):
+    """Add batch number to json file and run trials."""
     batch_file_path = file_root + 'batches.json'
+    batch_ran = False
     if not os.path.exists(file_root):
         os.mkdir(file_root)
     if os.path.exists(batch_file_path):
         with open(batch_file_path, 'r+', encoding='utf-8') as f:
             batches = json.load(f)
-            batches['batches'].append(batchName)
-        os.remove(batch_file_path)
-        with open(batch_file_path, 'w', encoding='utf-8') as f:
-            json.dump(batches, f, indent=4)
+            if batchName not in batches['batches']:
+                batches['batches'].append(batchName)
+            else:
+                batch_ran = True
+        if not batch_ran:
+            os.remove(batch_file_path)
+            with open(batch_file_path, 'w', encoding='utf-8') as f:
+                json.dump(batches, f, indent=4)
     else:
         with open(batch_file_path, 'w', encoding='utf-8') as f:
             json.dump({"batches" : [batchName]}, f, indent=4)
@@ -145,6 +151,7 @@ def compareBatchVariances(df: pd.DataFrame, batch_a: str, batch_b: str):
             prRed(f'{colname}  Variance for {batch_a} ({a_val}) was {percentageDiff} % greater than {batch_b} ({b_val})')
     print("\n")
 
+
 def quantifyPerformanceChangeKalibera(df, batch_a: str, batch_b: str, metric: str):
     print("Quantifying change in ", metric)
     means = df.groupby('batch').mean()[metric]
@@ -168,7 +175,7 @@ def quantifyPerformanceChangeKalibera(df, batch_a: str, batch_b: str, metric: st
     if rhs > 0:
         rhs_sqrt = math.sqrt(rhs)
     else:
-        print("Rhs must not be less than 0", rhs)
+        prRed(f"Error Rhs must not be less than 0 {rhs}")
         raise ValueError
     neg_numerator = prod_of_means - rhs_sqrt
     pos_numerator = prod_of_means + rhs_sqrt
@@ -215,7 +222,7 @@ def main():
                 try:
                     quantifyPerformanceChangeKalibera(df, batch_a, batch_b, metric)
                 except Exception as e:
-                    prRed("Error quantifying performance for ", metric)
+                    prRed(F"Error quantifying performance for {metric}")
     except OSError as e:
         print(e)
     finally:
